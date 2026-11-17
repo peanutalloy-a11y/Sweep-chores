@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sweep">
+<meta name="theme-color" content="#F6F4EF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141412" media="(prefers-color-scheme: dark)">
+<title>Sweep</title>
+<style>
+:root{
+  --bg:#F6F4EF; --card:#FFFFFF; --ink:#23211C; --muted:#857F73; --line:#E7E2D8;
+  --accent:#2F8A52; --accent-ink:#FFFFFF; --accent-soft:#E3F1E7;
+  --warm:#B97A1E; --warm-soft:#F7ECD8;
+  --shadow:0 1px 2px rgba(35,33,28,.06),0 6px 18px rgba(35,33,28,.05);
+  --r:18px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141412; --card:#1E1D1A; --ink:#EEEBE3; --muted:#9C968A; --line:#2E2C28;
+    --accent:#5BBB7E; --accent-ink:#0E1A12; --accent-soft:#1D3125;
+    --warm:#E0A94F; --warm-soft:#382C18; --shadow:none;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+#app{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 22px) 16px calc(env(safe-area-inset-bottom) + 104px)}
+h1{font-size:30px;line-height:1.1;margin:2px 0 0;letter-spacing:-.02em}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:600}
+.date{color:var(--muted);font-size:15px}
+.top{margin-bottom:22px}
+section{margin-top:26px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.sec-h .aside{font-size:14px;color:var(--muted)}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line)}
+.pad{padding:16px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+
+/* progress */
+.bar{height:6px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .4s}
+.bar.warm>i{background:var(--warm)}
+
+/* baseline */
+.base-row{display:flex;align-items:center;gap:12px;width:100%;padding:13px 16px;background:none;border:0;border-top:1px solid var(--line);text-align:left;cursor:pointer}
+.base-row:first-of-type{border-top:0}
+.tick{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;transition:all .15s}
+.tick svg{opacity:0}
+.on .tick{background:var(--accent);border-color:var(--accent)}
+.on .tick svg{opacity:1}
+.on .base-label{color:var(--muted)}
+.base-by{margin-left:auto;font-size:13px;color:var(--muted)}
+.base-done{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;width:100%;background:none;border:0;text-align:left}
+
+/* options */
+.opt{margin-bottom:12px;overflow:hidden}
+.opt-main{padding:16px 16px 4px;cursor:pointer}
+.opt-room{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+.opt-name{font-size:20px;font-weight:650;letter-spacing:-.01em;margin-top:2px}
+.opt-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:13px;padding:3px 9px;border-radius:999px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.chip.go{background:var(--accent-soft);color:var(--accent);border-color:transparent;font-weight:600}
+.chip.warm{background:var(--warm-soft);color:var(--warm);border-color:transparent}
+.steps{padding:4px 16px 0}
+.step{display:flex;gap:10px;align-items:center;width:100%;background:none;border:0;padding:8px 0;text-align:left;cursor:pointer;font-size:15px}
+.step .tick{width:22px;height:22px}
+.step.on span{text-decoration:line-through;color:var(--muted)}
+.opt-actions{display:flex;gap:8px;padding:14px 16px 16px;flex-wrap:wrap}
+.btn{border:0;border-radius:12px;padding:11px 16px;font-weight:600;cursor:pointer;background:var(--bg);border:1px solid var(--line)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);flex:1}
+.btn.ghost{background:none}
+.btn.wide{width:100%}
+.btn.danger{color:#C2412D}
+.btn:active{transform:scale(.98)}
+.linkish{background:none;border:0;color:var(--accent);font-weight:600;padding:0;cursor:pointer}
+
+.chain{background:var(--accent-soft);border:0;margin-bottom:12px}
+.chain .opt-room{color:var(--accent)}
+
+.empty{text-align:center;padding:30px 20px}
+.empty .big{font-size:22px;font-weight:650;margin-bottom:6px}
+
+/* chores list */
+.room{margin-top:22px}
+.row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--line);cursor:pointer;width:100%;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left}
+.row:first-child{border-top:0}
+.row .grow{flex:1;min-width:0}
+.row .name{font-weight:550}
+.fresh{width:64px;flex:none}
+.state{font-size:12px;color:var(--muted);text-align:right;margin-top:4px}
+
+/* nav */
+nav{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:8px 16px calc(env(safe-area-inset-bottom) + 8px);display:flex;justify-content:center;gap:8px;z-index:5}
+nav button{flex:1;max-width:170px;background:none;border:0;padding:10px;border-radius:12px;font-weight:600;color:var(--muted);cursor:pointer}
+nav button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+
+/* forms */
+label.f{display:block;margin:14px 0 6px;font-size:14px;color:var(--muted);font-weight:600}
+input.t,select.t,textarea.t{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:16px}
+textarea.t{min-height:96px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{flex:1;border:0;background:none;padding:9px;border-radius:9px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.stepper{display:flex;align-items:center;gap:14px}
+.stepper button{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:22px;cursor:pointer}
+.stepper .v{font-size:24px;font-weight:650;min-width:84px;text-align:center}
+.hint{font-size:14px;color:var(--muted);margin-top:8px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:20px 16px calc(env(safe-area-inset-bottom) + 20px)}
+.sheet h3{margin:0 0 4px;font-size:20px}
+.sheet .acts{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 84px);transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;transition:all .25s;z-index:20;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:14px;display:flex;gap:16px;align-items:center;font-size:15px;max-width:calc(100% - 32px)}
+#toast.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
+#toast button{background:none;border:0;color:var(--accent);font-weight:700;padding:0;cursor:pointer}
+@media (prefers-color-scheme: dark){#toast button{color:var(--accent-ink)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script type="module">
+/* ============================================================
+   Sweep: chores that adapt instead of piling up
+   Single file. Saves on this phone, and syncs through Firebase
+   once a config is added (here or in Settings).
+   ============================================================ */
+
+// Paste your Firebase config object here to set it up for every phone at once,
+// or leave it as null and paste it in Settings on each phone.
+const FIREBASE_CONFIG = null;
+
+const HOUSEHOLD = 'home';
+const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+const LS_STATE = 'sweep.state.v1';
+const LS_DEVICE = 'sweep.device.v1';
+const READY_AT = 0.7;      // a chore becomes "ready" at 70% of its interval
+const SPLIT_WEEKDAYS = 5;
+
+/* ---------- dates ---------- */
+const DAY = 86400000;
+const pad = n => String(n).padStart(2, '0');
+const toStr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromStr = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d, 12); };
+const today = () => toStr(new Date());
+const addDays = (s, n) => { const d = fromStr(s); d.setDate(d.getDate() + n); return toStr(d); };
+const daysBetween = (a, b) => Math.round((fromStr(b) - fromStr(a)) / DAY);
+const dow = (s = today()) => fromStr(s).getDay();
+const isWeekend = (s = today()) => [0, 6].includes(dow(s));
+const longDate = s => fromStr(s).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+const clone = o => JSON.parse(JSON.stringify(o));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+/* ---------- starting list (from the chore map) ---------- */
+// [name, room, every (days), minutes, checklist, parts, chain tag, preferred weekday (1 = Monday)]
+const SEED = [
+  ['Vacuum floors', 'Whole house', 7, 25, ['Vacuum hard floors', 'Vacuum carpets'], [], 'floors'],
+  ['Mop hard floors', 'Whole house', 14, 20, [], [], 'floors'],
+  ['Wash bedsheets', 'Bedroom', 7, 10, ['Strip the bed', 'Wash and dry', 'Remake the bed'], [], 'bed'],
+  ['Wash mattress protector', 'Bedroom', 30, 5, [], [], 'bed'],
+  ['Bedroom surfaces', 'Bedroom', 14, 10, ['Makeup desk and glass', 'Bedside tables', 'Bed frame']],
+  ['Ironing', 'Laundry', 7, 30, ['Iron work shirts and pants', 'Put sweat pads on shirts'], [], '', 1],
+  ['Bathroom weekly reset', 'Bathroom', 7, 15, ['Vanity mirror', 'Vanity surface and taps', 'Bath vanity', 'Toilet inside and out', 'Wipe the bathtub']],
+  ['Shower glass and tiles', 'Bathroom', 30, 20],
+  ['Vanity cupboards (outside)', 'Bathroom', 60, 5],
+  ['Bath exterior tiles', 'Bathroom', 91, 15],
+  ['Bathroom floor tiles and grout', 'Bathroom', 91, 40, [], ['First half of the floor', 'Second half of the floor']],
+  ['Replace toothbrushes', 'Bathroom', 91, 2],
+  ['Vanity cupboards (inside)', 'Bathroom', 182, 20, ['Empty', 'Wipe', 'Put back']],
+  ['Deep clean bathtub', 'Bathroom', 182, 30],
+  ['Clean dishwasher', 'Kitchen', 30, 15, ['Scrub and rinse filters', 'Clean door seals', 'Detach and clean water jets', '1 cup vinegar in the base, run a normal cycle'], [], 'dishwasher'],
+  ['Clean stovetop', 'Kitchen', 30, 15, ['Racks and heads into the dishwasher', 'Wipe the stovetop'], [], 'dishwasher'],
+  ['Clean stove exhaust', 'Kitchen', 30, 10, ['Wipe the outside of the fan', 'Filters into the dishwasher'], [], 'dishwasher'],
+  ['Benchtops and appliances (everything off)', 'Kitchen', 91, 25, [], [], 'benches'],
+  ['Backsplash tiles', 'Kitchen', 91, 15, [], [], 'benches'],
+  ['Kitchen cupboards (outside)', 'Kitchen', 91, 20, ['Include the undersides'], [], 'benches'],
+  ['Kitchen cupboards (inside)', 'Kitchen', 182, 45, [], ['Upper cupboards', 'Lower cupboards', 'Drawers']],
+  ['Fridge inside and out', 'Kitchen', 91, 30, ['Outside', 'Inside', 'Racks']],
+  ['Kitchen floor tiles and grout', 'Kitchen', 91, 40, [], ['First half of the floor', 'Second half of the floor']],
+  ['Balcony quick clean', 'Balcony', 14, 15, ['Vacuum up the dirt', 'Spray down with the hose']],
+  ['Steam clean windows (inside)', 'Balcony', 182, 30, [], [], 'windows'],
+  ['Steam clean windows (outside)', 'Balcony', 182, 30, [], [], 'windows'],
+  ['Wipe window blinds', 'Balcony', 182, 20, [], [], 'windows'],
+  ['Sliding door tracks and hallway mirror', 'Balcony and hallway', 182, 25, ['Balcony door tracks', 'Hallway door tracks', 'Hallway mirror']],
+  ['Living room surfaces', 'Living room', 7, 10, ['Record player', 'Cabinets', 'Table', 'Desks', 'Dresser']],
+  ['Couch blankets and vacuum couch', 'Living room', 60, 15],
+  ['Shoe rack and welcome display', 'Hallway', 90, 5],
+  ['Hallway floor and cupboard', 'Hallway', 182, 40, ['Vacuum', 'Mop', 'Scrub tiles and grout'], ['Hallway cupboard', 'Hallway']],
+  ['Laundry floor', 'Laundry', 182, 45, [], ['Move the machine, vacuum and mop', 'Scrub tiles and grout']],
+  ['Laundry surfaces', 'Laundry', 91, 10, ['Washing machine', 'Dryer', 'Shelves']],
+  ['Laundry tub', 'Laundry', 91, 10, ['Inside', 'Outside']],
+];
+const SEED_BASELINE = ['Dishes done, nothing stacked', 'Toilet and vanity clean', 'Nothing on the floors', 'Washing not piled up'];
+
+function makeChore([name, room, every, mins, checklist = [], parts = [], chain = '', prefDay = null]) {
+  return { id: slug(name), name, room, every, mins, checklist, parts, chain, prefDay,
+    partIdx: 0, lastDone: null, snoozedUntil: null, skips: 0, claim: null, log: [], suggestOff: null };
+}
+
+// Spread starting points so nothing begins overdue and nothing bunches up.
+function stagger(chores, t = today()) {
+  const list = Object.values(chores).sort((a, b) => a.every - b.every || a.name.localeCompare(b.name));
+  list.forEach((c, i) => {
+    const phase = (i * 0.6180339887) % 1;
+    const f = 0.25 + 0.7 * phase;
+    c.lastDone = addDays(t, -Math.floor(c.every * f));
+    c.partIdx = 0; c.snoozedUntil = null; c.skips = 0; c.claim = null;
+  });
+}
+
+function seedState() {
+  const chores = {};
+  SEED.forEach(r => { const c = makeChore(r); chores[c.id] = c; });
+  stagger(chores);
+  const baseline = {};
+  SEED_BASELINE.forEach((name, i) => { const id = 'b' + (i + 1); baseline[id] = { id, name, order: i, okDate: null, okBy: null }; });
+  return { chores, baseline, meta: { settings: { names: { a: 'Jacob', b: '' }, cap: 30 } } };
+}
+
+/* ---------- storage ---------- */
+function loadJSON(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }
+function saveJSON(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch {} }
+
+let state = loadJSON(LS_STATE) || seedState();
+state.chores ||= {}; state.baseline ||= {}; state.meta ||= {};
+let device = loadJSON(LS_DEVICE) || { me: null, config: null };
+const saveLocal = () => saveJSON(LS_STATE, state);
+const saveDevice = () => saveJSON(LS_DEVICE, device);
+saveLocal();
+
+const remote = { on: false, status: 'off', error: '', user: null, db: null, fs: null, auth: null, authMod: null, unsubs: [] };
+const docRef = (coll, id) => remote.fs.doc(remote.db, 'households', HOUSEHOLD, coll, id);
+
+function put(coll, id, patch, replace = false) {
+  const next = replace ? clone(patch) : { ...(state[coll][id] || {}), ...patch };
+  state[coll][id] = next;
+  saveLocal();
+  if (remote.on) remote.fs.setDoc(docRef(coll, id), clone(next)).catch(e => toast('Couldn’t sync: ' + (e.code || e.message)));
+  render();
+}
+function del(coll, id) {
+  delete state[coll][id];
+  saveLocal();
+  if (remote.on) remote.fs.deleteDoc(docRef(coll, id)).catch(e => toast('Couldn’t sync: ' + (e.code || e.message)));
+  render();
+}
+
+/* ---------- settings helpers ---------- */
+const S = () => {
+  const s = state.meta.settings || {};
+  return { cap: 30, ...s, names: { a: 'Jacob', b: '', ...(s.names || {}) } };
+};
+const nameOf = k => S().names[k] || (k === 'a' ? 'Person 1' : 'Person 2');
+const putSettings = patch => put('meta', 'settings', { ...S(), ...patch });
+
+/* ---------- the engine ---------- */
+const chores = () => Object.values(state.chores);
+const partsOf = c => (c.parts || []).filter(Boolean);
+function unit(c) {
+  const p = partsOf(c);
+  if (!p.length) return { label: null, mins: c.mins };
+  const i = Math.min(c.partIdx || 0, p.length - 1);
+  return { label: p[i], idx: i, of: p.length, mins: Math.max(1, Math.round(c.mins / p.length)) };
+}
+const ratio = (c, t = today()) => c.lastDone ? daysBetween(c.lastDone, t) / c.every : 1;
+const touchedToday = (c, t = today()) => (c.log || []).some(e => e.d === t);
+const snoozed = (c, t = today()) => !!c.snoozedUntil && c.snoozedUntil > t;
+const claimedByMe = (c, t = today()) => c.claim && c.claim.d === t && c.claim.by === device.me;
+const claimedByOther = (c, t = today()) => c.claim && c.claim.d === t && c.claim.by !== device.me;
+const minsToday = (t = today()) => chores().reduce((m, c) => m + (c.log || []).filter(e => e.d === t).reduce((a, e) => a + (e.m || 0), 0), 0);
+const paceNeeded = () => Math.round(chores().reduce((m, c) => m + c.mins * 7 / c.every, 0) / SPLIT_WEEKDAYS);
+
+function priority(c, t) {
+  let p = ratio(c, t);
+  if ((c.partIdx || 0) > 0) p += 0.3;            // finish what's started
+  if (c.prefDay != null && dow(t) === c.prefDay) p += 0.6;
+  if (claimedByMe(c, t)) p += 10;
+  return p;
+}
+function eligible(c, t) {
+  if (snoozed(c, t) || touchedToday(c, t) || claimedByOther(c, t)) return false;
+  if (claimedByMe(c, t)) return true;
+  const r = ratio(c, t);
+  if (c.prefDay != null && dow(t) !== c.prefDay && r < 1.3) return false; // wait for its day unless it's slipped well past
+  return r >= READY_AT || (c.partIdx || 0) > 0;
+}
+function options(t, ignoreBudget) {
+  const remaining = S().cap - minsToday(t);
+  let list = chores().filter(c => eligible(c, t)).sort((a, b) => priority(b, t) - priority(a, t));
+  if (!ignoreBudget) list = list.filter(c => claimedByMe(c, t) || (remaining > 0 && unit(c).mins <= remaining + 5));
+  if (ui.pinned) { const p = state.chores[ui.pinned]; if (p && !touchedToday(p, t)) list = [p, ...list.filter(c => c.id !== p.id)]; }
+  // three options, from different rooms where possible
+  const out = [], rooms = new Set();
+  for (const c of list) { if (out.length >= 3) break; if (c.id === ui.pinned || !rooms.has(c.room)) { out.push(c); rooms.add(c.room); } }
+  for (const c of list) { if (out.length >= 3) break; if (!out.includes(c)) out.push(c); }
+  return out;
+}
+function chainSuggestion(t) {
+  const src = ui.chainFor && state.chores[ui.chainFor];
+  if (!src) return null;
+  const remaining = S().cap - minsToday(t);
+  if (remaining <= 0) return null;
+  const sameTag = c => src.chain && c.chain === src.chain;
+  const cands = chores().filter(c => c.id !== src.id && !touchedToday(c, t) && !snoozed(c, t) && !claimedByOther(c, t)
+    && ratio(c, t) >= 0.5 && (c.room === src.room || sameTag(c)) && unit(c).mins <= Math.max(remaining, 10)
+    && (c.prefDay == null || dow(t) === c.prefDay));
+  cands.sort((a, b) => (sameTag(b) - sameTag(a)) || priority(b, t) - priority(a, t));
+  return cands[0] || null;
+}
+function suggestion(t) {
+  for (const c of chores()) {
+    if (c.suggestOff && daysBetween(c.suggestOff, t) < 30) continue;
+    if ((c.skips || 0) >= 3) return { c, every: Math.round(c.every * 1.5), why: 'You’ve passed on this a few times.' };
+    const fulls = (c.log || []).filter(e => e.full).map(e => e.d);
+    if (fulls.length >= 4) {
+      const last = fulls.slice(-4);
+      const avg = (daysBetween(last[0], last[3])) / 3;
+      if (avg > c.every * 1.4) return { c, every: Math.round(avg), why: `You’ve been doing this about every ${Math.round(avg)} days.` };
+    }
+  }
+  return null;
+}
+
+/* ---------- actions ---------- */
+function complete(c, forceFull = false) {
+  const t = today(); const before = clone(c);
+  const u = unit(c), p = partsOf(c);
+  const entry = { d: t, m: u.mins, by: device.me || 'a' };
+  let patch;
+  if (!forceFull && p.length && (c.partIdx || 0) < p.length - 1) {
+    entry.part = true;
+    patch = { partIdx: (c.partIdx || 0) + 1, claim: null };
+  } else {
+    entry.full = true;
+    if (forceFull) entry.m = c.mins;
+    patch = { lastDone: t, partIdx: 0, skips: 0, snoozedUntil: null, claim: null };
+  }
+  patch.log = [...(c.log || []), entry].slice(-20);
+  ui.expanded = null; ui.pinned = null; ui.chainFor = c.id; ui.checks = {};
+  put('chores', c.id, patch);
+  toast(entry.part ? `Part ${u.idx + 1} of ${u.of} done` : 'Done', () => { ui.chainFor = null; put('chores', c.id, before, true); });
+}
+function skip(c) {
+  const before = clone(c);
+  if (ui.pinned === c.id) ui.pinned = null;
+  put('chores', c.id, { snoozedUntil: addDays(today(), 1), skips: (c.skips || 0) + 1, claim: null });
+  toast('Moved to tomorrow', () => put('chores', c.id, before, true));
+}
+function claim(c) {
+  if (claimedByMe(c)) put('chores', c.id, { claim: null });
+  else put('chores', c.id, { claim: { by: device.me, d: today() } });
+}
+function freshStart() {
+  const all = clone(state.chores);
+  stagger(all);
+  for (const c of Object.values(all)) put('chores', c.id, c, true);
+  ui.chainFor = null; ui.pinned = null;
+  toast('Fresh start. Everything’s spread out again.');
+}
+
+/* ---------- UI state ---------- */
+const ui = { tab: 'today', expanded: null, pinned: null, chainFor: null, peekDate: null, moreDate: null, edit: null, checks: {}, baseOpen: false, sheet: null };
+
+/* ---------- icons ---------- */
+const CHECK = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5l2.6 2.6L11 4.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/* ---------- views ---------- */
+function viewWelcome() {
+  const s = S();
+  return `<section class="card pad">
+    <div class="opt-name" style="margin:0">Whose phone is this?</div>
+    <p class="muted small" style="margin:6px 0 14px">So the app knows who ticked what. You can change this in Settings.</p>
+    <div class="two">
+      <button class="btn" data-act="me" data-k="a">${esc(nameOf('a'))}</button>
+      <button class="btn" data-act="me" data-k="b">${s.names.b ? esc(s.names.b) : 'Someone else'}</button>
+    </div>
+  </section>`;
+}
+
+function viewBaseline(t) {
+  const items = Object.values(state.baseline).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  if (!items.length) return '';
+  const done = items.filter(b => b.okDate === t).length;
+  if (done === items.length && !ui.baseOpen) {
+    return `<section><div class="card"><button class="base-done on" data-act="base-open">
+      <span class="tick">${CHECK}</span><span><b>House is at baseline</b><br><span class="small muted">Tap to see the list</span></span>
+    </button></div></section>`;
+  }
+  return `<section>
+    <div class="sec-h"><h2>Baseline</h2><span class="aside">${done} of ${items.length}</span></div>
+    <div class="card">${items.map(b => {
+      const on = b.okDate === t;
+      return `<button class="base-row ${on ? 'on' : ''}" data-act="base" data-id="${b.id}">
+        <span class="tick">${CHECK}</span><span class="base-label">${esc(b.name)}</span>
+        ${on && b.okBy ? `<span class="base-by">${esc(nameOf(b.okBy))}</span>` : ''}
+      </button>`;
+    }).join('')}</div>
+  </section>`;
+}
+
+function chipsFor(c, t) {
+  const u = unit(c), out = [`<span class="chip">${u.mins} min</span>`];
+  if (u.label) out.push(`<span class="chip">Part ${u.idx + 1} of ${u.of}: ${esc(u.label)}</span>`);
+  if (claimedByMe(c, t)) out.push('<span class="chip go">You’re on it</span>');
+  if (c.prefDay != null && dow(t) === c.prefDay) out.push(`<span class="chip">${DAYS[c.prefDay]} job</span>`);
+  return out.join('');
+}
+
+function viewOption(c, t, extraClass = '') {
+  const open = ui.expanded === c.id;
+  const steps = c.checklist || [];
+  return `<article class="card opt ${extraClass}">
+    <div class="opt-main" data-act="expand" data-id="${c.id}">
+      <div class="opt-room">${esc(c.room)}</div>
+      <div class="opt-name">${esc(c.name)}</div>
+      <div class="opt-meta">${chipsFor(c, t)}${steps.length ? `<span class="chip">${open ? 'Hide steps' : steps.length + (steps.length === 1 ? ' step' : ' steps')}</span>` : ''}</div>
+    </div>
+    ${open && steps.length ? `<div class="steps">${steps.map((s, i) => {
+      const on = ui.checks[c.id + ':' + i];
+      return `<button class="step ${on ? 'on' : ''}" data-act="step" data-id="${c.id}" data-i="${i}"><span class="tick">${CHECK}</span><span>${esc(s)}</span></button>`;
+    }).join('')}</div>` : ''}
+    <div class="opt-actions">
+      <button class="btn primary" data-act="done" data-id="${c.id}">Done</button>
+      <button class="btn ghost" data-act="claim" data-id="${c.id}">${claimedByMe(c, t) ? 'Not me' : 'I’m on it'}</button>
+      <button class="btn ghost" data-act="skip" data-id="${c.id}">Not today</button>
+    </div>
+  </article>`;
+}
+
+function viewToday() {
+  const t = today(), s = S();
+  const done = minsToday(t);
+  const weekend = isWeekend(t);
+  const peek = ui.peekDate === t, more = ui.moreDate === t;
+  const hideRotation = weekend && !peek;
+  const opts = hideRotation ? [] : options(t, more || peek);
+  const chain = hideRotation ? null : chainSuggestion(t);
+  const showChain = chain && !opts.slice(0, 1).some(o => o.id === chain.id) && ui.pinned !== chain.id;
+  const others = chores().filter(c => claimedByOther(c, t));
+  const sug = suggestion(t);
+  const pct = Math.min(100, Math.round(done / Math.max(1, s.cap) * 100));
+  const me = device.me ? nameOf(device.me) : '';
+
+  let html = `<header class="top"><div class="date">${longDate(t)}</div><h1>${me ? 'Hi ' + esc(me) : 'Hi'}</h1></header>`;
+  if (!device.me) html += viewWelcome();
+  html += viewBaseline(t);
+
+  html += `<section>`;
+  if (!hideRotation) {
+    html += `<div class="sec-h"><h2>Pick one</h2><span class="aside">${done} of ${s.cap} min today</span></div>
+      <div class="bar" style="margin-bottom:14px"><i style="width:${pct}%"></i></div>`;
+  }
+  if (showChain) {
+    const u = unit(chain);
+    html += `<article class="card opt chain">
+      <div class="opt-main"><div class="opt-room">While you’re there</div><div class="opt-name">${esc(chain.name)}</div>
+      <div class="opt-meta"><span class="chip">${u.mins} min</span>${u.label ? `<span class="chip">${esc(u.label)}</span>` : ''}</div></div>
+      <div class="opt-actions"><button class="btn primary" data-act="chain-go" data-id="${chain.id}">Keep going</button>
+      <button class="btn ghost" data-act="chain-no">Done for now</button></div>
+    </article>`;
+    // one suggestion at a time: the other options wait behind a link
+    if (ui.othersFor !== chain.id) {
+      if (opts.length) html += `<p style="text-align:center;margin:4px 0 0"><button class="linkish" data-act="others" data-id="${chain.id}">Or pick something else</button></p>`;
+      html += `</section>`;
+      return html;
+    }
+  }
+  html += opts.map(c => viewOption(c, t)).join('');
+
+  if (!opts.length) {
+    if (hideRotation) {
+      html += `<div class="card empty"><div class="big">It’s the weekend</div><div class="muted">Nothing’s scheduled. The house can wait.</div>
+        <div style="margin-top:16px"><button class="linkish" data-act="peek">Show me something anyway</button></div></div>`;
+    } else if (done >= s.cap || more) {
+      html += `<div class="card empty"><div class="big">That’s today sorted</div>
+        <div class="muted">${done} min done between you.</div>
+        ${more ? '' : '<div style="margin-top:16px"><button class="linkish" data-act="more">One more?</button></div>'}</div>`;
+    } else {
+      html += `<div class="card empty"><div class="big">All fresh</div><div class="muted">Nothing needs doing yet. Enjoy it.</div></div>`;
+    }
+  }
+  if (others.length) {
+    html += `<p class="small muted" style="margin:6px 4px 0">${others.map(c => `${esc(nameOf(c.claim.by))} is on ${esc(c.name.toLowerCase())}`).join(' · ')}</p>`;
+  }
+  html += `</section>`;
+
+  if (sug && !hideRotation) {
+    html += `<section><div class="card pad">
+      <div class="opt-room">${esc(sug.c.name)}</div>
+      <div style="margin:6px 0 12px">${sug.why} Make it every ${sug.every} days instead of ${sug.c.every}?</div>
+      <div class="two"><button class="btn primary" data-act="sug-yes" data-id="${sug.c.id}" data-every="${sug.every}">Yes, change it</button>
+      <button class="btn" data-act="sug-no" data-id="${sug.c.id}">Keep it</button></div>
+    </div></section>`;
+  }
+  return html;
+}
+
+function freshnessState(c, t) {
+  const r = ratio(c, t);
+  if ((c.partIdx || 0) > 0) return { w: Math.min(1, r), word: `part ${c.partIdx + 1} next`, warm: false };
+  if (r < READY_AT) return { w: r, word: 'fresh', warm: false };
+  if (r < 1) return { w: r, word: 'ready', warm: false };
+  return { w: 1, word: 'due', warm: true };
+}
+
+function viewChores() {
+  const t = today();
+  const base = Object.values(state.baseline).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const rooms = {};
+  chores().forEach(c => (rooms[c.room] ||= []).push(c));
+  const order = Object.keys(rooms).sort();
+  let html = `<header class="top"><div class="date">${chores().length} chores · about ${paceNeeded()} min a weekday</div><h1>Chores</h1></header>`;
+
+  html += `<section><div class="sec-h"><h2>Baseline</h2><button class="linkish small" data-act="base-add">Add</button></div>
+    <div class="card">${base.map(b => `<button class="row" data-act="base-edit" data-id="${b.id}"><span class="grow name">${esc(b.name)}</span><span class="muted small">Edit</span></button>`).join('') || '<div class="pad muted">No baseline items yet.</div>'}</div>
+    <p class="hint">What “the house feels okay” means to you both. Checks reset every day.</p></section>`;
+
+  html += `<section><button class="btn primary wide" data-act="add">Add a chore</button></section>`;
+  for (const room of order) {
+    const list = rooms[room].sort((a, b) => ratio(b, t) - ratio(a, t));
+    html += `<div class="room"><div class="sec-h"><h2>${esc(room)}</h2></div><div class="card">${list.map(c => {
+      const f = freshnessState(c, t);
+      return `<button class="row" data-act="edit" data-id="${c.id}">
+        <span class="grow"><div class="name">${esc(c.name)}</div><div class="small muted">Every ${c.every} days · ${c.mins} min${partsOf(c).length ? ` · ${partsOf(c).length} parts` : ''}</div></span>
+        <span class="fresh"><div class="bar ${f.warm ? 'warm' : ''}"><i style="width:${Math.round(f.w * 100)}%"></i></div><div class="state">${f.word}</div></span>
+      </button>`;
+    }).join('')}</div></div>`;
+  }
+  return html;
+}
+
+function viewSettings() {
+  const s = S();
+  const cfg = FIREBASE_CONFIG || device.config;
+  let sync;
+  if (!cfg) {
+    sync = `<p class="small muted" style="margin-top:0">Right now everything is saved on this phone only. Paste the Firebase config snippet to share one list between both phones.</p>
+      <textarea class="t" id="cfg" placeholder="const firebaseConfig = { apiKey: ... };"></textarea>
+      <button class="btn primary wide" style="margin-top:10px" data-act="cfg-save">Save config</button>`;
+  } else if (remote.status === 'connecting') {
+    sync = `<p class="muted">Connecting…</p>`;
+  } else if (remote.status === 'error') {
+    sync = `<p class="small" style="margin-top:0">Something went wrong: ${esc(remote.error)}</p>
+      <div class="two"><button class="btn" data-act="cfg-retry">Try again</button><button class="btn danger" data-act="cfg-clear">Remove config</button></div>`;
+  } else if (!remote.user) {
+    sync = `<p class="small muted" style="margin-top:0">Sign in with the email and password you set up in Firebase.</p>
+      <input class="t" id="em" type="email" autocomplete="username" placeholder="Email">
+      <input class="t" id="pw" type="password" autocomplete="current-password" placeholder="Password" style="margin-top:8px">
+      <button class="btn primary wide" style="margin-top:10px" data-act="signin">Sign in</button>
+      ${FIREBASE_CONFIG ? '' : '<div style="margin-top:12px"><button class="linkish small" data-act="cfg-clear">Remove config</button></div>'}`;
+  } else {
+    sync = `<p style="margin-top:0">Synced as <b>${esc(remote.user.email)}</b>. Changes show on both phones straight away.</p>
+      <button class="btn" data-act="signout">Sign out</button>`;
+  }
+
+  return `<header class="top"><h1>Settings</h1></header>
+  <section><h2>This phone</h2><div class="seg" style="margin-top:10px">
+    <button class="${device.me === 'a' ? 'on' : ''}" data-act="me" data-k="a">${esc(nameOf('a'))}</button>
+    <button class="${device.me === 'b' ? 'on' : ''}" data-act="me" data-k="b">${esc(nameOf('b'))}</button></div>
+    <div class="two" style="margin-top:4px">
+      <div><label class="f">Name 1</label><input class="t" data-field="name-a" value="${esc(s.names.a)}"></div>
+      <div><label class="f">Name 2</label><input class="t" data-field="name-b" value="${esc(s.names.b)}" placeholder="Partner’s name"></div>
+    </div></section>
+
+  <section><h2>Daily time</h2><div class="card pad" style="margin-top:10px">
+    <div class="stepper"><button data-act="cap" data-d="-5">−</button><div class="v">${s.cap} min</div><button data-act="cap" data-d="5">+</button></div>
+    <p class="hint">Shared between you, weekdays only. Your list needs about <b>${paceNeeded()} min</b> a weekday to keep pace. Less than that is fine: everything just stretches out a little.</p>
+  </div></section>
+
+  <section><h2>Sync</h2><div class="card pad" style="margin-top:10px">${sync}</div></section>
+
+  <section><h2>Fresh start</h2><div class="card pad" style="margin-top:10px">
+    <p style="margin-top:0">Back from a break, or the list feels heavy? This spreads every chore out again so nothing is due all at once. Nothing is deleted.</p>
+    <button class="btn wide" data-act="fresh">Fresh start</button>
+  </div></section>
+
+  <section><h2>Backup</h2><div class="card pad" style="margin-top:10px">
+    <div class="two"><button class="btn" data-act="export">Export</button><button class="btn" data-act="import">Import</button></div>
+    <input type="file" id="importFile" accept="application/json" hidden>
+  </div></section>`;
+}
+
+function viewEditSheet() {
+  const e = ui.edit; if (!e) return '';
+  const c = e.id ? state.chores[e.id] : { name: '', room: '', every: 30, mins: 10, checklist: [], parts: [], prefDay: null };
+  const rooms = [...new Set(chores().map(x => x.room))].sort();
+  return `<div class="scrim" data-act="sheet-close"><div class="sheet" data-stop>
+    <h3>${e.id ? 'Edit chore' : 'New chore'}</h3>
+    ${e.id && c.lastDone ? `<div class="small muted">Last done ${daysBetween(c.lastDone, today())} days ago</div>` : ''}
+    <label class="f">Name</label><input class="t" id="e-name" value="${esc(c.name)}">
+    <label class="f">Room</label><input class="t" id="e-room" list="rooms" value="${esc(c.room)}">
+    <datalist id="rooms">${rooms.map(r => `<option value="${esc(r)}">`).join('')}</datalist>
+    <div class="two">
+      <div><label class="f">Every (days)</label><input class="t" id="e-every" type="number" inputmode="numeric" min="1" value="${c.every}"></div>
+      <div><label class="f">Minutes</label><input class="t" id="e-mins" type="number" inputmode="numeric" min="1" value="${c.mins}"></div>
+    </div>
+    <label class="f">Steps (one per line)</label><textarea class="t" id="e-steps">${esc((c.checklist || []).join('\n'))}</textarea>
+    <label class="f">Split into parts (one per line, optional)</label><textarea class="t" id="e-parts" placeholder="For big jobs: each part can be done on a different day">${esc((c.parts || []).join('\n'))}</textarea>
+    <label class="f">Preferred day</label><select class="t" id="e-day">
+      <option value="">Any weekday</option>${[1, 2, 3, 4, 5].map(d => `<option value="${d}" ${c.prefDay === d ? 'selected' : ''}>${DAYS[d]}</option>`).join('')}
+    </select>
+    <div class="acts">
+      <button class="btn primary" data-act="edit-save">Save</button>
+      ${e.id ? '<button class="btn" data-act="edit-done">Done today</button>' : ''}
+      <button class="btn ghost" data-act="sheet-close">Cancel</button>
+      ${e.id ? '<button class="btn ghost danger" data-act="edit-del">Delete</button>' : ''}
+    </div>
+  </div></div>`;
+}
+
+const app = document.getElementById('app');
+// Updates from the other phone wait until nobody is typing here.
+function renderSoft() {
+  const a = document.activeElement;
+  if (a && app.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) { ui.pendingRender = true; return; }
+  render();
+}
+app.addEventListener('focusout', () => setTimeout(() => {
+  if (ui.pendingRender && !(document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))) { ui.pendingRender = false; render(); }
+}, 50));
+
+function render() {
+  ui.pendingRender = false;
+  const view = ui.tab === 'today' ? viewToday() : ui.tab === 'chores' ? viewChores() : viewSettings();
+  app.innerHTML = view + `<nav>
+    <button class="${ui.tab === 'today' ? 'on' : ''}" data-act="tab" data-tab="today">Today</button>
+    <button class="${ui.tab === 'chores' ? 'on' : ''}" data-act="tab" data-tab="chores">Chores</button>
+    <button class="${ui.tab === 'settings' ? 'on' : ''}" data-act="tab" data-tab="settings">Settings</button>
+  </nav>` + viewEditSheet();
+}
+
+/* ---------- toast ---------- */
+const toastEl = document.getElementById('toast');
+let toastTimer, toastUndo;
+function toast(msg, undo) {
+  toastUndo = undo || null;
+  toastEl.innerHTML = `<span>${esc(msg)}</span>${undo ? '<button data-undo>Undo</button>' : ''}`;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), undo ? 6000 : 3000);
+}
+toastEl.addEventListener('click', e => {
+  if (e.target.closest('[data-undo]') && toastUndo) { const u = toastUndo; toastUndo = null; toastEl.classList.remove('show'); u(); }
+});
+
+/* ---------- events ---------- */
+app.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  if (el.dataset.act === 'sheet-close' && e.target.closest('[data-stop]') && el.classList.contains('scrim')) return;
+  const act = el.dataset.act, id = el.dataset.id, c = id && state.chores[id], t = today();
+  const needMe = () => { if (!device.me) { toast('First pick whose phone this is'); return true; } return false; };
+
+  switch (act) {
+    case 'tab': ui.tab = el.dataset.tab; ui.baseOpen = false; window.scrollTo(0, 0); render(); break;
+    case 'me': device.me = el.dataset.k; saveDevice();
+      if (el.dataset.k === 'b' && !S().names.b) { const n = prompt('What’s your name?'); if (n && n.trim()) putSettings({ names: { ...S().names, b: n.trim() } }); }
+      render(); break;
+    case 'base': {
+      if (needMe()) break;
+      const b = state.baseline[id];
+      put('baseline', id, b.okDate === t ? { okDate: null, okBy: null } : { okDate: t, okBy: device.me });
+      break;
+    }
+    case 'base-open': ui.baseOpen = true; render(); break;
+    case 'base-add': {
+      const n = prompt('New baseline item'); if (!n || !n.trim()) break;
+      const id2 = 'b' + uid(); const max = Math.max(-1, ...Object.values(state.baseline).map(b => b.order ?? 0));
+      put('baseline', id2, { id: id2, name: n.trim(), order: max + 1, okDate: null, okBy: null }); break;
+    }
+    case 'base-edit': {
+      const b = state.baseline[id];
+      const n = prompt('Rename, or clear the text to delete', b.name);
+      if (n === null) break;
+      if (!n.trim()) { if (confirm(`Delete “${b.name}”?`)) del('baseline', id); }
+      else put('baseline', id, { name: n.trim() });
+      break;
+    }
+    case 'expand': ui.expanded = ui.expanded === id ? null : id; render(); break;
+    case 'step': ui.checks[id + ':' + el.dataset.i] = !ui.checks[id + ':' + el.dataset.i]; render(); break;
+    case 'done': if (!needMe()) complete(c); break;
+    case 'skip': skip(c); break;
+    case 'claim': if (!needMe()) claim(c); break;
+    case 'chain-go': ui.pinned = id; ui.expanded = id; ui.chainFor = null; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); break;
+    case 'chain-no': ui.chainFor = null; render(); break;
+    case 'others': ui.othersFor = id; render(); break;
+    case 'peek': ui.peekDate = t; render(); break;
+    case 'more': ui.moreDate = t; render(); break;
+    case 'sug-yes': put('chores', id, { every: Number(el.dataset.every), skips: 0, suggestOff: t }); toast('Updated'); break;
+    case 'sug-no': put('chores', id, { skips: 0, suggestOff: t }); break;
+    case 'add': ui.edit = { id: null }; render(); break;
+    case 'edit': ui.edit = { id }; render(); break;
+    case 'sheet-close': ui.edit = null; render(); break;
+    case 'edit-save': saveEdit(); break;
+    case 'edit-done': { const cc = state.chores[ui.edit.id]; ui.edit = null; complete(cc, true); break; }
+    case 'edit-del': { const cc = state.chores[ui.edit.id]; if (confirm(`Delete “${cc.name}”?`)) { ui.edit = null; del('chores', cc.id); } break; }
+    case 'cap': putSettings({ cap: Math.max(5, Math.min(180, S().cap + Number(el.dataset.d))) }); break;
+    case 'fresh': if (confirm('Spread every chore out again? Nothing is deleted.')) freshStart(); break;
+    case 'export': exportData(); break;
+    case 'import': document.getElementById('importFile').click(); break;
+    case 'cfg-save': {
+      try { device.config = parseConfig(document.getElementById('cfg').value); saveDevice(); connectRemote(); toast('Config saved'); }
+      catch (err) { toast('That doesn’t look like a Firebase config: ' + err.message); }
+      break;
+    }
+    case 'cfg-retry': connectRemote(); break;
+    case 'cfg-clear': if (confirm('Remove the sync setup from this phone? Your chores stay on the phone.')) { stopSync(); device.config = null; saveDevice(); remote.status = 'off'; render(); } break;
+    case 'signin': {
+      const em = document.getElementById('em').value.trim(), pw = document.getElementById('pw').value;
+      try { await remote.authMod.signInWithEmailAndPassword(remote.auth, em, pw); }
+      catch (err) { toast('Sign-in didn’t work: ' + (err.code || err.message).replace('auth/', '')); }
+      break;
+    }
+    case 'signout': await remote.authMod.signOut(remote.auth); break;
+  }
+});
+
+app.addEventListener('change', e => {
+  const f = e.target.dataset.field;
+  if (f === 'name-a' || f === 'name-b') {
+    const k = f.slice(-1); putSettings({ names: { ...S().names, [k]: e.target.value.trim() } });
+  }
+  if (e.target.id === 'importFile' && e.target.files[0]) importData(e.target.files[0]);
+});
+
+function saveEdit() {
+  const v = id => document.getElementById(id).value;
+  const lines = id => v(id).split('\n').map(s => s.trim()).filter(Boolean);
+  const name = v('e-name').trim();
+  if (!name) { toast('Give it a name'); return; }
+  const data = {
+    name, room: v('e-room').trim() || 'Other',
+    every: Math.max(1, Math.round(Number(v('e-every')) || 7)),
+    mins: Math.max(1, Math.round(Number(v('e-mins')) || 10)),
+    checklist: lines('e-steps'), parts: lines('e-parts'),
+    prefDay: v('e-day') ? Number(v('e-day')) : null,
+  };
+  if (ui.edit.id) {
+    const cur = state.chores[ui.edit.id];
+    if ((cur.partIdx || 0) >= data.parts.length) data.partIdx = 0;
+    ui.edit = null; put('chores', cur.id, data);
+  } else {
+    let id = slug(name) || uid(); if (state.chores[id]) id += '-' + uid().slice(0, 4);
+    // a new chore starts half-way through its interval
+    ui.edit = null;
+    put('chores', id, { ...makeChore([name, data.room, data.every, data.mins]), ...data, id, lastDone: addDays(today(), -Math.floor(data.every / 2)) }, true);
+  }
+  toast('Saved');
+}
+
+/* ---------- backup ---------- */
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `sweep-backup-${today()}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+async function importData(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    if (!data.chores) throw new Error('No chores in that file');
+    if (!confirm('Replace the current list with this backup?')) return;
+    for (const id of Object.keys(state.chores)) if (!data.chores[id]) del('chores', id);
+    for (const [id, c] of Object.entries(data.chores)) put('chores', id, c, true);
+    for (const id of Object.keys(state.baseline)) if (!(data.baseline || {})[id]) del('baseline', id);
+    for (const [id, b] of Object.entries(data.baseline || {})) put('baseline', id, b, true);
+    if (data.meta?.settings) put('meta', 'settings', data.meta.settings, true);
+    toast('Backup loaded');
+  } catch (err) { toast('Couldn’t read that file: ' + err.message); }
+}
+
+/* ---------- Firebase sync ---------- */
+function parseConfig(text) {
+  const a = text.indexOf('{'), b = text.lastIndexOf('}');
+  if (a < 0 || b < a) throw new Error('no { … } found');
+  const s = text.slice(a, b + 1)
+    .replace(/^\s*\/\/.*$/gm, '')
+    .replace(/'/g, '"')
+    .replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":')
+    .replace(/,\s*}/g, '}');
+  const cfg = JSON.parse(s);
+  if (!cfg.apiKey || !cfg.projectId) throw new Error('missing apiKey or projectId');
+  return cfg;
+}
+
+async function connectRemote() {
+  const cfg = FIREBASE_CONFIG || device.config;
+  if (!cfg) { remote.status = 'off'; return; }
+  remote.status = 'connecting'; render();
+  try {
+    const [appMod, authMod, fs] = await Promise.all([
+      import(SDK + 'firebase-app.js'), import(SDK + 'firebase-auth.js'), import(SDK + 'firebase-firestore.js')]);
+    const fapp = appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(cfg);
+    remote.fs = fs; remote.db = fs.getFirestore(fapp);
+    remote.authMod = authMod; remote.auth = authMod.getAuth(fapp);
+    remote.status = 'ready';
+    authMod.onAuthStateChanged(remote.auth, user => {
+      remote.user = user;
+      if (user) startSync(); else stopSync();
+      render();
+    });
+  } catch (err) { remote.status = 'error'; remote.error = err.message; render(); }
+}
+
+async function startSync() {
+  const { fs, db } = remote;
+  try {
+    const existing = await fs.getDocs(fs.collection(db, 'households', HOUSEHOLD, 'chores'));
+    if (existing.empty) { // first phone to connect uploads its list
+      const batch = fs.writeBatch(db);
+      for (const coll of ['chores', 'baseline', 'meta'])
+        for (const [id, obj] of Object.entries(state[coll])) batch.set(docRef(coll, id), clone(obj));
+      await batch.commit();
+    }
+    stopSync();
+    remote.on = true; remote.status = 'live';
+    for (const coll of ['chores', 'baseline', 'meta']) {
+      remote.unsubs.push(fs.onSnapshot(fs.collection(db, 'households', HOUSEHOLD, coll), snap => {
+        const obj = {}; snap.forEach(d => { obj[d.id] = d.data(); });
+        state[coll] = obj; saveLocal(); renderSoft();
+      }, err => { remote.on = false; remote.status = 'error'; remote.error = err.code || err.message; render(); }));
+    }
+    render();
+  } catch (err) { remote.on = false; remote.status = 'error'; remote.error = err.code || err.message; render(); }
+}
+function stopSync() { remote.unsubs.forEach(u => u()); remote.unsubs = []; remote.on = false; }
+
+/* ---------- start ---------- */
+let lastDay = today();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') { if (today() !== lastDay) { lastDay = today(); ui.chainFor = null; ui.pinned = null; ui.checks = {}; } render(); }
+});
+render();
+connectRemote();
+
+// exposed for testing in the browser console
+window.sweep = { state: () => state, options, ratio, unit, minsToday, paceNeeded };
+</script>
+</body>
+</html>
