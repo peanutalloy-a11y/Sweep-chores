@@ -138,7 +138,14 @@ textarea.t{min-height:96px;resize:vertical}
 
 // Paste your Firebase config object here to set it up for every phone at once,
 // or leave it as null and paste it in Settings on each phone.
-const FIREBASE_CONFIG = null;
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAsJ5rtc0oYuFNQK2qVSl5Sf5iXfgY746Q",
+  authDomain: "chores-116a7.firebaseapp.com",
+  projectId: "chores-116a7",
+  storageBucket: "chores-116a7.firebasestorage.app",
+  messagingSenderId: "176512316334",
+  appId: "1:176512316334:web:b82a5539e3e1d3ca234e3f"
+};
 
 const HOUSEHOLD = 'home';
 const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
@@ -784,16 +791,16 @@ async function importData(file) {
 }
 
 /* ---------- Firebase sync ---------- */
+// Reads key: "value" pairs one by one, so curly quotes, odd spaces and
+// line breaks from a phone's copy and paste don't matter.
 function parseConfig(text) {
-  const a = text.indexOf('{'), b = text.lastIndexOf('}');
-  if (a < 0 || b < a) throw new Error('no { … } found');
-  const s = text.slice(a, b + 1)
-    .replace(/^\s*\/\/.*$/gm, '')
-    .replace(/'/g, '"')
-    .replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":')
-    .replace(/,\s*}/g, '}');
-  const cfg = JSON.parse(s);
-  if (!cfg.apiKey || !cfg.projectId) throw new Error('missing apiKey or projectId');
+  const cfg = {};
+  const Q = '["\'\\u201C\\u201D\\u2018\\u2019\\u201E\\u00AB\\u00BB]';
+  const re = new RegExp('([A-Za-z]+)\\s*:\\s*' + Q + '([^"\'\\u201C\\u201D\\u2018\\u2019\\u201E\\u00AB\\u00BB\\n\\r\\u2028\\u2029]+)' + Q, 'g');
+  let m;
+  while ((m = re.exec(text))) cfg[m[1]] = m[2].trim();
+  if (!cfg.apiKey || !cfg.projectId) throw new Error('couldn’t find apiKey and projectId');
+  if (!cfg.authDomain) cfg.authDomain = cfg.projectId + '.firebaseapp.com';
   return cfg;
 }
 
